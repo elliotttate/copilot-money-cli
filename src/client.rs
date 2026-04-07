@@ -19,6 +19,9 @@ pub enum ClientMode {
         token: Option<String>,
         token_file: PathBuf,
         session_dir: Option<PathBuf>,
+        /// When true and running in a terminal, automatically open a browser to
+        /// re-authenticate if the token is expired and session refresh fails.
+        auto_login: bool,
     },
     Fixtures(PathBuf),
 }
@@ -512,13 +515,18 @@ impl CopilotClient {
                 token,
                 token_file,
                 session_dir,
+                auto_login,
             } => {
                 let url = format!("{}/api/graphql", base_url.trim_end_matches('/'));
                 let http = http_client_from_env()?;
 
                 let mut current_token = token.clone().or_else(|| load_token(token_file).ok());
 
-                for attempt in 1..=2 {
+                // Up to 3 attempts:
+                //   1 → original token
+                //   2 → session-based headless refresh (if session dir exists)
+                //   3 → interactive browser login  (if auto_login + terminal)
+                for attempt in 1..=3 {
                     let mut req = http.post(&url).json(&json!({
                         "operationName": operation_name,
                         "query": query,
@@ -533,14 +541,56 @@ impl CopilotClient {
                     let body: Value = resp.json()?;
 
                     if is_unauthenticated(&body) {
-                        if attempt == 1
-                            && let Some(dir) = session_dir.as_ref().filter(|d| d.exists())
-                        {
-                            let refreshed = refresh_token_via_session(dir, 180)?;
-                            save_token(token_file, &refreshed)?;
-                            current_token = Some(refreshed);
-                            continue;
+                        // Attempt 1 → try silent session refresh
+                        if attempt == 1 {
+                            if let Some(dir) = session_dir.as_ref().filter(|d| d.exists()) {
+                                match refresh_token_via_session(dir, 180) {
+                                    Ok(refreshed) => {
+                                        let _ = save_token(token_file, &refreshed);
+                                        current_token = Some(refreshed);
+                                        continue;
+                                    }
+                                    Err(_) => {
+                                        // Session refresh failed; fall through to attempt 2
+                                    }
+                                }
+                            }
+                            // No session dir or refresh failed — skip straight to auto-login
+                            // if enabled, otherwise error out.
+                            if !*auto_login || !std::io::IsTerminal::is_terminal(&std::io::stdin())
+                            {
+                                anyhow::bail!(
+                                    "unauthenticated (token missing/expired). Re-run `copilot auth login` (or `copilot auth set-token`)."
+                                );
+                            }
                         }
+
+                        // Attempt 2 → auto-login via interactive browser
+                        if attempt <= 2
+                            && *auto_login
+                            && std::io::IsTerminal::is_terminal(&std::io::stdin())
+                        {
+                            eprintln!();
+                            eprintln!("Token expired — launching browser to re-authenticate...");
+                            match auto_login_via_browser(
+                                session_dir.clone(),
+                                token_file,
+                                300,
+                            ) {
+                                Ok(refreshed) => {
+                                    current_token = Some(refreshed);
+                                    eprintln!("Token refreshed successfully.");
+                                    eprintln!();
+                                    continue;
+                                }
+                                Err(e) => {
+                                    anyhow::bail!(
+                                        "auto-login failed: {e}\n\nRe-run `copilot auth login` manually."
+                                    );
+                                }
+                            }
+                        }
+
                         anyhow::bail!(
                             "unauthenticated (token missing/expired). Re-run `copilot auth login` (or `copilot auth set-token`)."
                         );
@@ -640,6 +690,53 @@ fn refresh_token_via_session(session_dir: &Path, timeout_seconds: u64) -> anyhow
     if token.is_empty() {
         anyhow::bail!("token refresh helper returned empty token");
     }
+    Ok(token)
+}
+
+/// Launch a headful browser for the user to log in interactively.
+/// The session is persisted so future calls can use silent refresh.
+/// The new token is saved to `token_file`.
+fn auto_login_via_browser(
+    session_dir: Option<PathBuf>,
+    token_file: &Path,
+    timeout_seconds: u64,
+) -> anyhow::Result<String> {
+    // Test hook
+    if let Ok(t) = std::env::var("COPILOT_TEST_AUTO_LOGIN_TOKEN")
+        && !t.trim().is_empty()
+    {
+        return Ok(t.trim().to_string());
+    }
+
+    let Some(helper) = crate::config::token_helper_path() else {
+        anyhow::bail!(
+            "browser helper not found. Install python3 + playwright, then run `copilot auth login`."
+        );
+    };
+
+    // Ensure session dir exists so the login persists for future silent refreshes.
+    let session = session_dir.unwrap_or_else(crate::config::session_path);
+    crate::config::ensure_private_dir(&session)?;
+
+    let out = std::process::Command::new("python3")
+        .arg(&helper)
+        .args(["--mode", "interactive", "--headful"])
+        .args(["--user-data-dir", session.to_string_lossy().as_ref()])
+        .args(["--timeout-seconds", &timeout_seconds.to_string()])
+        .stdin(std::process::Stdio::inherit())
+        .stderr(std::process::Stdio::inherit())
+        .output()?;
+
+    if !out.status.success() {
+        anyhow::bail!("browser login failed (helper exited with {})", out.status);
+    }
+
+    let token = String::from_utf8(out.stdout)?.trim().to_string();
+    if token.is_empty() {
+        anyhow::bail!("browser login produced no token — was the login completed?");
+    }
+
+    save_token(token_file, &token)?;
     Ok(token)
 }
 

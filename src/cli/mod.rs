@@ -87,6 +87,12 @@ pub struct Cli {
 
     #[arg(long, global = true, env = "COPILOT_FIXTURES_DIR", hide = true)]
     pub fixtures_dir: Option<PathBuf>,
+
+    /// Disable automatic browser re-authentication when the token expires.
+    /// By default, the CLI will open a browser to log in again if the token
+    /// is expired and silent refresh fails (only in interactive terminals).
+    #[arg(long, global = true, default_value_t = false)]
+    pub no_auto_login: bool,
 }
 
 #[derive(Debug, Clone, Subcommand)]
@@ -772,6 +778,7 @@ pub fn run(cli: Cli) -> anyhow::Result<()> {
                 .session_dir
                 .clone()
                 .or_else(|| session_path().exists().then_some(session_path())),
+            auto_login: !cli.no_auto_login,
         },
     };
     let client = CopilotClient::new(mode);

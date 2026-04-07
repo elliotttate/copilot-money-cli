@@ -141,6 +141,7 @@ fn http_mode_sends_bearer_and_accepts_success() {
         token: Some("abc".to_string()),
         token_file: tmp.path().join("token"),
         session_dir: None,
+        auto_login: false,
     });
     client.try_user_query().unwrap();
 }
@@ -154,6 +155,7 @@ fn http_mode_errors_on_graphql_errors_key() {
         token: None,
         token_file: tmp.path().join("token"),
         session_dir: None,
+        auto_login: false,
     });
     assert!(client.try_user_query().is_err());
 }
@@ -171,6 +173,7 @@ fn http_mode_formats_graphql_error_with_code() {
         token: None,
         token_file: tmp.path().join("token"),
         session_dir: None,
+        auto_login: false,
     });
 
     let err = client.try_user_query().unwrap_err().to_string();
@@ -186,6 +189,7 @@ fn http_mode_errors_on_http_status() {
         token: None,
         token_file: tmp.path().join("token"),
         session_dir: None,
+        auto_login: false,
     });
     assert!(client.try_user_query().is_err());
 }
@@ -216,6 +220,7 @@ fn http_mode_refreshes_token_on_unauthenticated_and_retries_once() {
         token: Some("expired_token".to_string()),
         token_file: token_file.clone(),
         session_dir: Some(session_dir),
+        auto_login: false,
     });
 
     client.try_user_query().unwrap();

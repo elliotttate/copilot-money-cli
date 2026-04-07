@@ -1175,6 +1175,7 @@ pub fn run_mcp(
                 let sp = session_path();
                 sp.exists().then_some(sp)
             }),
+            auto_login: false, // MCP is non-interactive; never launch a browser
         },
     };
 
