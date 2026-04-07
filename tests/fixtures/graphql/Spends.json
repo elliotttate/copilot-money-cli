@@ -1,0 +1,38 @@
+{
+  "data": {
+    "categoriesTotal": {
+      "spend": {
+        "current": {
+          "id": "sp_current",
+          "month": "2025-12",
+          "amount": 3500.00,
+          "comparisonAmount": 2800.75,
+          "unpaidRecurringAmount": 450.00
+        },
+        "histories": [
+          {
+            "id": "sp_oct",
+            "month": "2025-10",
+            "amount": 3200.50,
+            "comparisonAmount": 2900.00,
+            "unpaidRecurringAmount": 0
+          },
+          {
+            "id": "sp_nov",
+            "month": "2025-11",
+            "amount": 2800.75,
+            "comparisonAmount": 3200.50,
+            "unpaidRecurringAmount": 200.00
+          },
+          {
+            "id": "sp_dec",
+            "month": "2025-12",
+            "amount": 3500.00,
+            "comparisonAmount": 2800.75,
+            "unpaidRecurringAmount": 450.00
+          }
+        ]
+      }
+    }
+  }
+}

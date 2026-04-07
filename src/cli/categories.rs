@@ -124,7 +124,45 @@ pub(super) fn run_categories(
                 );
                 return Ok(());
             }
-            anyhow::bail!("categories edit not implemented yet (need captured mutation document)");
+            super::confirm_write(cli, &format!("Edit category {}", args.id))?;
+
+            let cat_id: crate::types::CategoryId = args.id.parse().unwrap();
+            let mut input = serde_json::Map::new();
+            if let Some(name) = args.name {
+                input.insert("name".into(), serde_json::Value::String(name));
+            }
+            if let Some(emoji) = args.emoji {
+                input.insert("emoji".into(), serde_json::Value::String(emoji));
+            }
+            if let Some(color) = args.color_name {
+                input.insert("colorName".into(), serde_json::Value::String(color));
+            }
+            if let Some(excluded) = args.excluded {
+                input.insert("isExcluded".into(), serde_json::Value::Bool(excluded));
+            }
+
+            let cat = client.edit_category(&cat_id, serde_json::Value::Object(input))?;
+            render_output(
+                cli,
+                vec![
+                    KeyValueRow {
+                        key: "id".to_string(),
+                        value: cat.id.to_string(),
+                    },
+                    KeyValueRow {
+                        key: "name".to_string(),
+                        value: cat.name.unwrap_or_default(),
+                    },
+                    KeyValueRow {
+                        key: "is_excluded".to_string(),
+                        value: cat.is_excluded.unwrap_or(false).to_string(),
+                    },
+                    KeyValueRow {
+                        key: "color_name".to_string(),
+                        value: cat.color_name.unwrap_or_default(),
+                    },
+                ],
+            )
         }
     }
 }

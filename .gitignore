@@ -24,6 +24,9 @@ secrets/
 **/secrets/
 **/.secrets/
 
+# Claude Code (local MCP config with absolute paths)
+.claude/
+
 # Rust
 /target/
 

@@ -96,6 +96,7 @@ pub enum TagMarker {}
 pub enum RecurringMarker {}
 pub enum AccountMarker {}
 pub enum ItemMarker {}
+pub enum InstitutionMarker {}
 
 pub type TransactionId = OwnedId<TransactionMarker>;
 pub type CategoryId = OwnedId<CategoryMarker>;
@@ -103,6 +104,7 @@ pub type TagId = OwnedId<TagMarker>;
 pub type RecurringId = OwnedId<RecurringMarker>;
 pub type AccountId = OwnedId<AccountMarker>;
 pub type ItemId = OwnedId<ItemMarker>;
+pub type InstitutionId = OwnedId<InstitutionMarker>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, ValueEnum)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]

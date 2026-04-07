@@ -8,8 +8,8 @@ use serde_json::{Value, json};
 use crate::config::{load_token, save_token};
 use crate::ops;
 use crate::types::{
-    AccountId, CategoryId, ItemId, RecurringFrequency, RecurringId, TagId, TransactionId,
-    TransactionType,
+    AccountId, CategoryId, InstitutionId, ItemId, RecurringFrequency, RecurringId, TagId,
+    TransactionId, TransactionType,
 };
 
 #[derive(Debug, Clone)]
@@ -373,6 +373,128 @@ impl CopilotClient {
         Ok(serde_json::from_value(recurring)?)
     }
 
+    pub fn list_accounts(&self) -> anyhow::Result<Vec<Account>> {
+        let data = self.graphql(
+            "Accounts",
+            ops::ACCOUNTS,
+            json!({ "filter": null, "accountLink": false }),
+        )?;
+        let items = data
+            .pointer("/data/accounts")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| anyhow::anyhow!("unexpected Accounts response shape"))?;
+        let mut out = Vec::new();
+        for item in items {
+            let a: Account = serde_json::from_value(item.clone())?;
+            out.push(a);
+        }
+        Ok(out)
+    }
+
+    pub fn get_networth(&self, time_frame: Option<&str>) -> anyhow::Result<Vec<NetworthEntry>> {
+        let data = self.graphql(
+            "Networth",
+            ops::NETWORTH,
+            json!({ "timeFrame": time_frame }),
+        )?;
+        let items = data
+            .pointer("/data/networthHistory")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| anyhow::anyhow!("unexpected Networth response shape"))?;
+        let mut out = Vec::new();
+        for item in items {
+            let e: NetworthEntry = serde_json::from_value(item.clone())?;
+            out.push(e);
+        }
+        Ok(out)
+    }
+
+    pub fn get_networth_live_balance(&self) -> anyhow::Result<NetworthEntry> {
+        let data = self.graphql(
+            "NetworthLiveBalance",
+            ops::NETWORTH_LIVE_BALANCE,
+            json!({}),
+        )?;
+        let entry = data
+            .pointer("/data/networthLiveBalance")
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("unexpected NetworthLiveBalance response shape"))?;
+        Ok(serde_json::from_value(entry)?)
+    }
+
+    pub fn list_monthly_spend(&self) -> anyhow::Result<Vec<MonthlySpendEntry>> {
+        let data = self.graphql("MonthlySpend", ops::MONTHLY_SPEND, json!({}))?;
+        let items = data
+            .pointer("/data/monthlySpending")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| anyhow::anyhow!("unexpected MonthlySpend response shape"))?;
+        let mut out = Vec::new();
+        for item in items {
+            let e: MonthlySpendEntry = serde_json::from_value(item.clone())?;
+            out.push(e);
+        }
+        Ok(out)
+    }
+
+    pub fn list_spends(&self, history: bool) -> anyhow::Result<SpendData> {
+        let data = self.graphql("Spends", ops::SPENDS, json!({ "history": history }))?;
+        let spend = data
+            .pointer("/data/categoriesTotal/spend")
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("unexpected Spends response shape"))?;
+        Ok(serde_json::from_value(spend)?)
+    }
+
+    pub fn list_upcoming_recurrings(&self) -> anyhow::Result<Vec<UpcomingRecurring>> {
+        let data = self.graphql(
+            "UpcomingRecurrings",
+            ops::UPCOMING_RECURRINGS,
+            json!({}),
+        )?;
+        let items = data
+            .pointer("/data/unpaidUpcomingRecurrings")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| anyhow::anyhow!("unexpected UpcomingRecurrings response shape"))?;
+        let mut out = Vec::new();
+        for item in items {
+            let r: UpcomingRecurring = serde_json::from_value(item.clone())?;
+            out.push(r);
+        }
+        Ok(out)
+    }
+
+    pub fn get_transaction_summary(
+        &self,
+        filter: Option<Value>,
+    ) -> anyhow::Result<TransactionSummary> {
+        let data = self.graphql(
+            "TransactionSummary",
+            ops::TRANSACTION_SUMMARY,
+            json!({ "filter": filter }),
+        )?;
+        let summary = data
+            .pointer("/data/transactionsSummary")
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("unexpected TransactionSummary response shape"))?;
+        Ok(serde_json::from_value(summary)?)
+    }
+
+    pub fn edit_category(&self, id: &CategoryId, input: Value) -> anyhow::Result<Category> {
+        let data = self.graphql(
+            "EditCategory",
+            ops::EDIT_CATEGORY,
+            json!({
+                "id": id.as_str(),
+                "input": input
+            }),
+        )?;
+        let cat = data
+            .pointer("/data/editCategory")
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("unexpected EditCategory response shape"))?;
+        Ok(serde_json::from_value(cat)?)
+    }
+
     fn graphql(
         &self,
         operation_name: &str,
@@ -539,7 +661,7 @@ pub struct TransactionsPage {
     pub page_info: PageInfo,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Tag {
     pub id: TagId,
     pub name: Option<String>,
@@ -547,7 +669,7 @@ pub struct Tag {
     pub color_name: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Transaction {
     pub id: TransactionId,
     pub date: Option<String>,
@@ -638,4 +760,115 @@ pub struct Recurring {
 pub struct BudgetMonth {
     pub month: String,
     pub amount: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Account {
+    pub id: AccountId,
+    pub name: Option<String>,
+    #[serde(rename = "type")]
+    pub account_type: Option<String>,
+    #[serde(rename = "subType")]
+    pub sub_type: Option<String>,
+    pub mask: Option<String>,
+    pub balance: Option<Value>,
+    pub limit: Option<Value>,
+    #[serde(rename = "itemId")]
+    pub item_id: Option<ItemId>,
+    #[serde(rename = "institutionId")]
+    pub institution_id: Option<InstitutionId>,
+    #[serde(rename = "isManual")]
+    pub is_manual: Option<bool>,
+    #[serde(rename = "isUserHidden")]
+    pub is_user_hidden: Option<bool>,
+    #[serde(rename = "isUserClosed")]
+    pub is_user_closed: Option<bool>,
+    pub color: Option<String>,
+    #[serde(rename = "hasLiveBalance")]
+    pub has_live_balance: Option<bool>,
+    #[serde(rename = "liveBalance")]
+    pub live_balance: Option<Value>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct NetworthEntry {
+    pub assets: Option<Value>,
+    pub date: Option<String>,
+    pub debt: Option<Value>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct MonthlySpendEntry {
+    pub id: Option<String>,
+    pub date: Option<String>,
+    #[serde(rename = "totalAmount")]
+    pub total_amount: Option<Value>,
+    #[serde(rename = "comparisonAmount")]
+    pub comparison_amount: Option<Value>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SpendData {
+    pub current: Option<SpendMonthly>,
+    pub histories: Option<Vec<SpendMonthly>>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct SpendMonthly {
+    pub id: Option<String>,
+    pub month: Option<String>,
+    pub amount: Option<Value>,
+    #[serde(rename = "comparisonAmount")]
+    pub comparison_amount: Option<Value>,
+    #[serde(rename = "unpaidRecurringAmount")]
+    pub unpaid_recurring_amount: Option<Value>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UpcomingRecurring {
+    pub id: RecurringId,
+    pub name: Option<String>,
+    pub frequency: Option<RecurringFrequency>,
+    #[serde(rename = "categoryId")]
+    pub category_id: Option<CategoryId>,
+    pub state: Option<String>,
+    pub emoji: Option<String>,
+    pub icon: Option<Icon>,
+    #[serde(rename = "nextPaymentDate")]
+    pub next_payment_date: Option<String>,
+    #[serde(rename = "nextPaymentAmount")]
+    pub next_payment_amount: Option<Value>,
+    pub rule: Option<RecurringRule>,
+    pub payments: Option<Vec<RecurringPayment>>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RecurringRule {
+    #[serde(rename = "nameContains")]
+    pub name_contains: Option<String>,
+    #[serde(rename = "minAmount")]
+    pub min_amount: Option<Value>,
+    #[serde(rename = "maxAmount")]
+    pub max_amount: Option<Value>,
+    pub days: Option<Vec<i32>>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RecurringPayment {
+    pub amount: Option<Value>,
+    #[serde(rename = "isPaid")]
+    pub is_paid: Option<bool>,
+    pub date: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct TransactionSummary {
+    #[serde(rename = "transactionsCount")]
+    pub transactions_count: Option<i64>,
+    #[serde(rename = "totalNetIncome")]
+    pub total_net_income: Option<Value>,
+    #[serde(rename = "totalIncome")]
+    pub total_income: Option<Value>,
+    #[serde(rename = "totalSpent")]
+    pub total_spent: Option<Value>,
 }

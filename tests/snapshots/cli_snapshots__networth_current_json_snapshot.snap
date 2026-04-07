@@ -1,0 +1,22 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"json\", \"networth\", \"current\"])"
+---
+[
+  {
+    "key": "date",
+    "value": "2025-12-15"
+  },
+  {
+    "key": "assets",
+    "value": "$125000.50"
+  },
+  {
+    "key": "debt",
+    "value": "$45000.25"
+  },
+  {
+    "key": "net_worth",
+    "value": "$80000.25"
+  }
+]

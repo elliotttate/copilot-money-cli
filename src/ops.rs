@@ -49,3 +49,40 @@ pub const DELETE_TAG: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/graphql/DeleteTag.graphql"
 ));
+
+pub const ACCOUNTS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/Accounts.graphql"
+));
+pub const ACCOUNT_LIVE_BALANCE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/AccountLiveBalance.graphql"
+));
+pub const NETWORTH: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/Networth.graphql"
+));
+pub const NETWORTH_LIVE_BALANCE: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/NetworthLiveBalance.graphql"
+));
+pub const MONTHLY_SPEND: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/MonthlySpend.graphql"
+));
+pub const SPENDS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/Spends.graphql"
+));
+pub const UPCOMING_RECURRINGS: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/UpcomingRecurrings.graphql"
+));
+pub const TRANSACTION_SUMMARY: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/TransactionSummary.graphql"
+));
+pub const EDIT_CATEGORY: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/graphql/EditCategory.graphql"
+));

@@ -1,0 +1,15 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--yes\", \"categories\", \"edit\", \"cat_other\", \"--name\",\n\"Renamed Category\", \"--color-name\", \"RED1\",])"
+---
+╭─────────────┬──────────────────╮
+│ key         ┆ value            │
+╞═════════════╪══════════════════╡
+│ id          ┆ cat_other        │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+│ name        ┆ Renamed Category │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+│ is_excluded ┆ false            │
+├╌╌╌╌╌╌╌╌╌╌╌╌╌┼╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┤
+│ color_name  ┆ RED1             │
+╰─────────────┴──────────────────╯

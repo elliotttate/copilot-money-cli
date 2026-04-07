@@ -1,0 +1,22 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"json\", \"spending\", \"summary\"])"
+---
+[
+  {
+    "key": "transactions",
+    "value": "157"
+  },
+  {
+    "key": "total_income",
+    "value": "$8500.00"
+  },
+  {
+    "key": "total_spent",
+    "value": "$6049.25"
+  },
+  {
+    "key": "net_income",
+    "value": "$2450.75"
+  }
+]

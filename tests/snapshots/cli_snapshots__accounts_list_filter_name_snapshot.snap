@@ -1,0 +1,9 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"accounts\", \"list\", \"--name-contains\", \"chase\"])"
+---
+╭────────┬────────────────┬────────────┬──────────┬──────┬──────────╮
+│ id     ┆ name           ┆ type       ┆ sub_type ┆ mask ┆ balance  │
+╞════════╪════════════════╪════════════╪══════════╪══════╪══════════╡
+│ acct_1 ┆ Chase Checking ┆ depository ┆ checking ┆ 1234 ┆ $5432.10 │
+╰────────┴────────────────┴────────────┴──────────┴──────┴──────────╯

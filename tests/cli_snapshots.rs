@@ -281,3 +281,274 @@ fn budgets_month_table_snapshot() {
 fn budgets_month_json_snapshot() {
     insta::assert_snapshot!(run(&["--output", "json", "budgets", "month"]));
 }
+
+// ---- Accounts ----
+
+#[test]
+fn accounts_list_table_snapshot() {
+    insta::assert_snapshot!(run(&["accounts", "list"]));
+}
+
+#[test]
+fn accounts_list_json_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "json", "accounts", "list"]));
+}
+
+#[test]
+fn accounts_list_show_hidden_snapshot() {
+    insta::assert_snapshot!(run(&["accounts", "list", "--show-hidden"]));
+}
+
+#[test]
+fn accounts_list_filter_type_snapshot() {
+    insta::assert_snapshot!(run(&["accounts", "list", "--account-type", "credit"]));
+}
+
+#[test]
+fn accounts_list_filter_name_snapshot() {
+    insta::assert_snapshot!(run(&["accounts", "list", "--name-contains", "chase"]));
+}
+
+#[test]
+fn accounts_show_table_snapshot() {
+    insta::assert_snapshot!(run(&["accounts", "show", "acct_1"]));
+}
+
+#[test]
+fn accounts_show_json_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "json", "accounts", "show", "acct_1"]));
+}
+
+#[test]
+fn accounts_list_csv_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "csv", "accounts", "list"]));
+}
+
+// ---- Net worth ----
+
+#[test]
+fn networth_current_table_snapshot() {
+    insta::assert_snapshot!(run(&["networth", "current"]));
+}
+
+#[test]
+fn networth_current_json_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "json", "networth", "current"]));
+}
+
+#[test]
+fn networth_history_table_snapshot() {
+    insta::assert_snapshot!(run(&["networth", "history"]));
+}
+
+#[test]
+fn networth_history_json_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "json", "networth", "history"]));
+}
+
+// ---- Spending ----
+
+#[test]
+fn spending_monthly_table_snapshot() {
+    insta::assert_snapshot!(run(&["spending", "monthly"]));
+}
+
+#[test]
+fn spending_monthly_json_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "json", "spending", "monthly"]));
+}
+
+#[test]
+fn spending_summary_table_snapshot() {
+    insta::assert_snapshot!(run(&["spending", "summary"]));
+}
+
+#[test]
+fn spending_summary_json_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "json", "spending", "summary"]));
+}
+
+#[test]
+fn spending_history_table_snapshot() {
+    insta::assert_snapshot!(run(&["spending", "history"]));
+}
+
+#[test]
+fn spending_history_json_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "json", "spending", "history"]));
+}
+
+// ---- Upcoming recurrings ----
+
+#[test]
+fn recurrings_upcoming_table_snapshot() {
+    insta::assert_snapshot!(run(&["recurrings", "upcoming"]));
+}
+
+#[test]
+fn recurrings_upcoming_json_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "json", "recurrings", "upcoming"]));
+}
+
+// ---- Categories edit ----
+
+#[test]
+fn categories_edit_table_snapshot() {
+    insta::assert_snapshot!(run(&[
+        "--yes",
+        "categories",
+        "edit",
+        "cat_other",
+        "--name",
+        "Renamed Category",
+        "--color-name",
+        "RED1",
+    ]));
+}
+
+// ---- Transaction filters: date range, amount, account ----
+
+#[test]
+fn transactions_list_table_filter_from_snapshot() {
+    // Both transactions have date 2025-12-15, so --from 2025-12-15 matches both
+    insta::assert_snapshot!(run(&["transactions", "list", "--from", "2025-12-15"]));
+}
+
+#[test]
+fn transactions_list_table_filter_to_snapshot() {
+    insta::assert_snapshot!(run(&["transactions", "list", "--to", "2025-12-15"]));
+}
+
+#[test]
+fn transactions_list_table_filter_from_to_range_snapshot() {
+    insta::assert_snapshot!(run(&[
+        "transactions",
+        "list",
+        "--from",
+        "2025-12-01",
+        "--to",
+        "2025-12-31",
+    ]));
+}
+
+#[test]
+fn transactions_list_table_filter_from_excludes_snapshot() {
+    // future date: no results
+    insta::assert_snapshot!(run(&["transactions", "list", "--from", "2026-01-01"]));
+}
+
+#[test]
+fn transactions_list_table_filter_min_amount_snapshot() {
+    // txn_1 is -100, txn_2 is -57.48. Min 80 should only match txn_1
+    insta::assert_snapshot!(run(&["transactions", "list", "--min-amount", "80"]));
+}
+
+#[test]
+fn transactions_list_table_filter_max_amount_snapshot() {
+    // max 60 should only match txn_2 (57.48)
+    insta::assert_snapshot!(run(&["transactions", "list", "--max-amount", "60"]));
+}
+
+#[test]
+fn transactions_list_table_filter_amount_range_snapshot() {
+    // 50..80 should only match txn_2 (57.48)
+    insta::assert_snapshot!(run(&[
+        "transactions",
+        "list",
+        "--min-amount",
+        "50",
+        "--max-amount",
+        "80",
+    ]));
+}
+
+#[test]
+fn transactions_list_table_filter_account_snapshot() {
+    insta::assert_snapshot!(run(&["transactions", "list", "--account", "chase"]));
+}
+
+#[test]
+fn transactions_list_table_filter_account_id_snapshot() {
+    insta::assert_snapshot!(run(&["transactions", "list", "--account-id", "acct_2"]));
+}
+
+// ---- Totals ----
+
+#[test]
+fn transactions_list_table_totals_snapshot() {
+    insta::assert_snapshot!(run(&["transactions", "list", "--totals"]));
+}
+
+// ---- CSV output ----
+
+#[test]
+fn transactions_list_csv_snapshot() {
+    insta::assert_snapshot!(run(&["--output", "csv", "transactions", "list"]));
+}
+
+#[test]
+fn transactions_list_csv_with_fields_snapshot() {
+    insta::assert_snapshot!(run(&[
+        "--output",
+        "csv",
+        "transactions",
+        "list",
+        "--fields",
+        "date,name,amount,account,id",
+    ]));
+}
+
+// ---- New fields: account, notes ----
+
+#[test]
+fn transactions_list_table_fields_account_notes_snapshot() {
+    insta::assert_snapshot!(run(&[
+        "transactions",
+        "list",
+        "--fields",
+        "date,name,amount,account,notes,id",
+    ]));
+}
+
+// ---- Enhanced search (notes, category, tags) ----
+
+#[test]
+fn transactions_search_by_category_name_snapshot() {
+    // "other" should match txn_1 via category name "Other"
+    insta::assert_snapshot!(run(&["transactions", "search", "other"]));
+}
+
+#[test]
+fn transactions_search_by_tag_name_snapshot() {
+    // "shopping" should match txn_2 via tag name "Shopping"
+    insta::assert_snapshot!(run(&["transactions", "search", "shopping"]));
+}
+
+// ---- Duplicate detection ----
+
+#[test]
+fn transactions_duplicates_snapshot() {
+    // With only 2 different-amount transactions in fixture, no duplicates expected
+    insta::assert_snapshot!(run(&["transactions", "duplicates"]));
+}
+
+// ---- Shell completions ----
+
+#[test]
+fn completions_bash_works() {
+    // Just verify it produces output without error
+    let output = run(&["completions", "bash"]);
+    assert!(output.contains("copilot"));
+}
+
+#[test]
+fn completions_zsh_works() {
+    let output = run(&["completions", "zsh"]);
+    assert!(output.contains("copilot"));
+}
+
+#[test]
+fn completions_fish_works() {
+    let output = run(&["completions", "fish"]);
+    assert!(output.contains("copilot"));
+}

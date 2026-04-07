@@ -1,0 +1,7 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"csv\", \"transactions\", \"list\", \"--fields\",\n\"date,name,amount,account,id\",])"
+---
+date,name,amount,account,id
+2025-12-15,Venmo,-$100.00,Chase Checking,txn_1
+2025-12-15,Amazon.com,-$57.48,Amex Gold,txn_2

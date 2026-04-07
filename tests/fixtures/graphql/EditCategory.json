@@ -1,0 +1,15 @@
+{
+  "data": {
+    "editCategory": {
+      "id": "cat_other",
+      "name": "Renamed Category",
+      "isRolloverDisabled": null,
+      "canBeDeleted": true,
+      "isExcluded": false,
+      "templateId": null,
+      "colorName": "RED1",
+      "icon": null,
+      "childCategories": null
+    }
+  }
+}

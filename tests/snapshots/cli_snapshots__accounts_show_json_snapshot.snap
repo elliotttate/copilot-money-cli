@@ -1,0 +1,50 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"json\", \"accounts\", \"show\", \"acct_1\"])"
+---
+[
+  {
+    "key": "id",
+    "value": "acct_1"
+  },
+  {
+    "key": "name",
+    "value": "Chase Checking"
+  },
+  {
+    "key": "type",
+    "value": "depository"
+  },
+  {
+    "key": "sub_type",
+    "value": "checking"
+  },
+  {
+    "key": "mask",
+    "value": "1234"
+  },
+  {
+    "key": "balance",
+    "value": "$5432.10"
+  },
+  {
+    "key": "limit",
+    "value": ""
+  },
+  {
+    "key": "color",
+    "value": "blue"
+  },
+  {
+    "key": "is_manual",
+    "value": "false"
+  },
+  {
+    "key": "is_hidden",
+    "value": "false"
+  },
+  {
+    "key": "is_closed",
+    "value": "false"
+  }
+]

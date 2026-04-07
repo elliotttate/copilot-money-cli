@@ -1,0 +1,7 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"csv\", \"accounts\", \"list\"])"
+---
+id,name,type,sub_type,mask,balance
+acct_1,Chase Checking,depository,checking,1234,$5432.10
+acct_2,Amex Gold,credit,credit card,5678,-$1234.56

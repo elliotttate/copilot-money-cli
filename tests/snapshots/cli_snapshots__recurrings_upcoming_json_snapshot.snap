@@ -1,0 +1,22 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"json\", \"recurrings\", \"upcoming\"])"
+---
+[
+  {
+    "id": "rec_1",
+    "name": "Rent",
+    "frequency": "MONTHLY",
+    "next_date": "2026-01-01",
+    "next_amount": "-$2500.00",
+    "state": "ACTIVE"
+  },
+  {
+    "id": "rec_2",
+    "name": "Internet",
+    "frequency": "MONTHLY",
+    "next_date": "2025-12-28",
+    "next_amount": "-$79.99",
+    "state": "ACTIVE"
+  }
+]

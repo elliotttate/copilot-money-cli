@@ -1,0 +1,54 @@
+{
+  "data": {
+    "unpaidUpcomingRecurrings": [
+      {
+        "id": "rec_1",
+        "name": "Rent",
+        "frequency": "MONTHLY",
+        "categoryId": "cat_housing",
+        "state": "ACTIVE",
+        "emoji": null,
+        "icon": null,
+        "nextPaymentDate": "2026-01-01",
+        "nextPaymentAmount": -2500.00,
+        "rule": {
+          "nameContains": "rent",
+          "minAmount": null,
+          "maxAmount": null,
+          "days": null
+        },
+        "payments": [
+          {
+            "amount": -2500.00,
+            "isPaid": false,
+            "date": "2026-01-01"
+          }
+        ]
+      },
+      {
+        "id": "rec_2",
+        "name": "Internet",
+        "frequency": "MONTHLY",
+        "categoryId": "cat_utilities",
+        "state": "ACTIVE",
+        "emoji": null,
+        "icon": null,
+        "nextPaymentDate": "2025-12-28",
+        "nextPaymentAmount": -79.99,
+        "rule": {
+          "nameContains": "comcast",
+          "minAmount": null,
+          "maxAmount": null,
+          "days": null
+        },
+        "payments": [
+          {
+            "amount": -79.99,
+            "isPaid": false,
+            "date": "2025-12-28"
+          }
+        ]
+      }
+    ]
+  }
+}

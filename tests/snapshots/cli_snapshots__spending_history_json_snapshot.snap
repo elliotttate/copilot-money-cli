@@ -1,0 +1,24 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"json\", \"spending\", \"history\"])"
+---
+[
+  {
+    "month": "2025-10",
+    "amount": "$3200.50",
+    "comparison": "$2900.00",
+    "unpaid_recurring": "$0.00"
+  },
+  {
+    "month": "2025-11",
+    "amount": "$2800.75",
+    "comparison": "$3200.50",
+    "unpaid_recurring": "$200.00"
+  },
+  {
+    "month": "2025-12",
+    "amount": "$3500.00",
+    "comparison": "$2800.75",
+    "unpaid_recurring": "$450.00"
+  }
+]

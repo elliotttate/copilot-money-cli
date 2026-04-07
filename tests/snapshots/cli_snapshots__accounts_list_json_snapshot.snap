@@ -1,0 +1,22 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"json\", \"accounts\", \"list\"])"
+---
+[
+  {
+    "id": "acct_1",
+    "name": "Chase Checking",
+    "account_type": "depository",
+    "sub_type": "checking",
+    "mask": "1234",
+    "balance": "$5432.10"
+  },
+  {
+    "id": "acct_2",
+    "name": "Amex Gold",
+    "account_type": "credit",
+    "sub_type": "credit card",
+    "mask": "5678",
+    "balance": "-$1234.56"
+  }
+]

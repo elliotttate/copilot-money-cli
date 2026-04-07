@@ -1,0 +1,29 @@
+mutation EditCategory($id: ID!, $input: EditCategoryInput!) {
+  editCategory(id: $id, input: $input) {
+    id
+    name
+    isRolloverDisabled
+    canBeDeleted
+    isExcluded
+    templateId
+    colorName
+    icon {
+      ... on EmojiUnicode {
+        unicode
+        __typename
+      }
+      ... on Genmoji {
+        id
+        src
+        __typename
+      }
+      __typename
+    }
+    childCategories {
+      id
+      name
+      __typename
+    }
+    __typename
+  }
+}

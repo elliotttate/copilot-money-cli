@@ -1,0 +1,63 @@
+{
+  "data": {
+    "accounts": [
+      {
+        "id": "acct_1",
+        "name": "Chase Checking",
+        "type": "depository",
+        "subType": "checking",
+        "mask": "1234",
+        "balance": 5432.10,
+        "limit": null,
+        "itemId": "item_1",
+        "institutionId": "inst_chase",
+        "isManual": false,
+        "isUserHidden": false,
+        "isUserClosed": false,
+        "color": "blue",
+        "hasLiveBalance": true,
+        "liveBalance": 5432.10,
+        "hasHistoricalUpdates": true,
+        "latestBalanceUpdate": "2025-12-15"
+      },
+      {
+        "id": "acct_2",
+        "name": "Amex Gold",
+        "type": "credit",
+        "subType": "credit card",
+        "mask": "5678",
+        "balance": -1234.56,
+        "limit": 10000,
+        "itemId": "item_2",
+        "institutionId": "inst_amex",
+        "isManual": false,
+        "isUserHidden": false,
+        "isUserClosed": false,
+        "color": "gold",
+        "hasLiveBalance": true,
+        "liveBalance": -1234.56,
+        "hasHistoricalUpdates": true,
+        "latestBalanceUpdate": "2025-12-15"
+      },
+      {
+        "id": "acct_3",
+        "name": "Old Savings",
+        "type": "depository",
+        "subType": "savings",
+        "mask": "9999",
+        "balance": 100.00,
+        "limit": null,
+        "itemId": "item_3",
+        "institutionId": "inst_chase",
+        "isManual": false,
+        "isUserHidden": true,
+        "isUserClosed": false,
+        "color": "gray",
+        "hasLiveBalance": false,
+        "liveBalance": null,
+        "hasHistoricalUpdates": false,
+        "latestBalanceUpdate": null
+      }
+    ]
+  }
+}

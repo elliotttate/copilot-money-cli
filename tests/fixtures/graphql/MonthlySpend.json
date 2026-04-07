@@ -1,0 +1,24 @@
+{
+  "data": {
+    "monthlySpending": [
+      {
+        "id": "ms_oct",
+        "date": "2025-10-01",
+        "totalAmount": 3200.50,
+        "comparisonAmount": 2900.00
+      },
+      {
+        "id": "ms_nov",
+        "date": "2025-11-01",
+        "totalAmount": 2800.75,
+        "comparisonAmount": 3200.50
+      },
+      {
+        "id": "ms_dec",
+        "date": "2025-12-01",
+        "totalAmount": 3500.00,
+        "comparisonAmount": 2800.75
+      }
+    ]
+  }
+}

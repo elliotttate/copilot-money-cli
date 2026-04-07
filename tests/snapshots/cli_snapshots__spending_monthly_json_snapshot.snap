@@ -1,0 +1,21 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"json\", \"spending\", \"monthly\"])"
+---
+[
+  {
+    "date": "2025-10-01",
+    "total": "$3200.50",
+    "comparison": "$2900.00"
+  },
+  {
+    "date": "2025-11-01",
+    "total": "$2800.75",
+    "comparison": "$3200.50"
+  },
+  {
+    "date": "2025-12-01",
+    "total": "$3500.00",
+    "comparison": "$2800.75"
+  }
+]

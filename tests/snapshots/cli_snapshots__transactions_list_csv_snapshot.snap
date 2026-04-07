@@ -1,0 +1,7 @@
+---
+source: tests/cli_snapshots.rs
+expression: "run(&[\"--output\", \"csv\", \"transactions\", \"list\"])"
+---
+date,name,amount,reviewed,category,tags,type
+2025-12-15,Venmo,-$100.00,false,Other,,
+2025-12-15,Amazon.com,-$57.48,true,Shops,Shopping,

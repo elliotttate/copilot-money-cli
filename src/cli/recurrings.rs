@@ -5,7 +5,7 @@ use crate::client::{CopilotClient, Recurring};
 use crate::types::{CategoryId, RecurringId};
 
 use super::render::{KeyValueRow, TableRow, render_output, shorten_id_for_table};
-use super::{Cli, RecurringsCmd, RecurringsListArgs};
+use super::{Cli, RecurringsCmd, RecurringsListArgs, value_to_money_string};
 
 pub(super) fn run_recurrings(
     cli: &Cli,
@@ -122,6 +122,21 @@ pub(super) fn run_recurrings(
                 ],
             )
         }
+        RecurringsCmd::Upcoming => {
+            let items = client.list_upcoming_recurrings()?;
+            let rows: Vec<UpcomingRow> = items
+                .into_iter()
+                .map(|r| UpcomingRow {
+                    id: r.id,
+                    name: r.name.unwrap_or_default(),
+                    frequency: r.frequency.map(|f| f.to_string()).unwrap_or_default(),
+                    next_date: r.next_payment_date.unwrap_or_default(),
+                    next_amount: value_to_money_string(r.next_payment_amount),
+                    state: r.state.unwrap_or_default(),
+                })
+                .collect();
+            render_output(cli, rows)
+        }
         RecurringsCmd::Edit(args) => {
             if cli.dry_run {
                 println!("dry-run: would edit recurring {}", args.id);
@@ -229,4 +244,30 @@ fn filter_recurrings(mut items: Vec<Recurring>, args: &RecurringsListArgs) -> Ve
         items.retain(|r| r.name.as_deref().unwrap_or("").to_lowercase().contains(&q));
     }
     items
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct UpcomingRow {
+    id: RecurringId,
+    name: String,
+    frequency: String,
+    next_date: String,
+    next_amount: String,
+    state: String,
+}
+
+impl TableRow for UpcomingRow {
+    const HEADERS: &'static [&'static str] =
+        &["id", "name", "frequency", "next_date", "next_amount", "state"];
+
+    fn cells(&self) -> Vec<Cell> {
+        vec![
+            Cell::new(shorten_id_for_table(self.id.as_str())),
+            Cell::new(&self.name),
+            Cell::new(&self.frequency),
+            Cell::new(&self.next_date),
+            Cell::new(&self.next_amount),
+            Cell::new(&self.state),
+        ]
+    }
 }
