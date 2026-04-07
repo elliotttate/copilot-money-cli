@@ -658,9 +658,12 @@ fn format_graphql_error(body: &Value) -> Option<String> {
 }
 
 /// Returns true if auto-login should be attempted. In production this requires
-/// an interactive terminal. During tests, the presence of the
-/// `COPILOT_TEST_AUTO_LOGIN_TOKEN` env var bypasses the terminal check so the
-/// full retry path can be exercised.
+/// a desktop environment where a browser window can open and the user can see
+/// status messages. We check stderr (not stdin) because the browser helper
+/// opens a GUI window — it does not need interactive stdin.
+///
+/// During tests, the `COPILOT_TEST_AUTO_LOGIN_TOKEN` env var bypasses the
+/// terminal check so the full retry path can be exercised.
 fn should_attempt_auto_login(auto_login: bool) -> bool {
     if !auto_login {
         return false;
@@ -673,7 +676,20 @@ fn should_attempt_auto_login(auto_login: bool) -> bool {
     {
         return true;
     }
-    std::io::IsTerminal::is_terminal(&std::io::stdin())
+    // Explicit opt-in via env var — useful when running from an IDE, agent, or
+    // piped context where the TTY check fails but a browser can still open.
+    if std::env::var("COPILOT_AUTO_LOGIN")
+        .ok()
+        .filter(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .is_some()
+    {
+        return true;
+    }
+    // Check stderr rather than stdin: the browser helper opens a GUI window and
+    // doesn't need stdin. What matters is whether a human can see our status
+    // messages. This also allows auto-login when stdin is piped but the user is
+    // watching (e.g. running from an IDE/agent terminal).
+    std::io::IsTerminal::is_terminal(&std::io::stderr())
 }
 
 fn refresh_token_via_session(session_dir: &Path, timeout_seconds: u64) -> anyhow::Result<String> {
