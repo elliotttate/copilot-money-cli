@@ -551,14 +551,12 @@ impl CopilotClient {
                                         continue;
                                     }
                                     Err(_) => {
-                                        // Session refresh failed; fall through to attempt 2
+                                        // Session refresh failed; fall through to auto-login
                                     }
                                 }
                             }
-                            // No session dir or refresh failed — skip straight to auto-login
-                            // if enabled, otherwise error out.
-                            if !*auto_login || !std::io::IsTerminal::is_terminal(&std::io::stdin())
-                            {
+                            // No session dir or refresh failed — try auto-login if allowed
+                            if !should_attempt_auto_login(*auto_login) {
                                 anyhow::bail!(
                                     "unauthenticated (token missing/expired). Re-run `copilot auth login` (or `copilot auth set-token`)."
                                 );
@@ -566,10 +564,7 @@ impl CopilotClient {
                         }
 
                         // Attempt 2 → auto-login via interactive browser
-                        if attempt <= 2
-                            && *auto_login
-                            && std::io::IsTerminal::is_terminal(&std::io::stdin())
-                        {
+                        if attempt <= 2 && should_attempt_auto_login(*auto_login) {
                             eprintln!();
                             eprintln!("Token expired — launching browser to re-authenticate...");
                             match auto_login_via_browser(
@@ -662,6 +657,25 @@ fn format_graphql_error(body: &Value) -> Option<String> {
     Some(out)
 }
 
+/// Returns true if auto-login should be attempted. In production this requires
+/// an interactive terminal. During tests, the presence of the
+/// `COPILOT_TEST_AUTO_LOGIN_TOKEN` env var bypasses the terminal check so the
+/// full retry path can be exercised.
+fn should_attempt_auto_login(auto_login: bool) -> bool {
+    if !auto_login {
+        return false;
+    }
+    // Test hook: allow the auto-login path to be exercised without a real terminal
+    if std::env::var("COPILOT_TEST_AUTO_LOGIN_TOKEN")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .is_some()
+    {
+        return true;
+    }
+    std::io::IsTerminal::is_terminal(&std::io::stdin())
+}
+
 fn refresh_token_via_session(session_dir: &Path, timeout_seconds: u64) -> anyhow::Result<String> {
     // Test hook: allow deterministic refresh without running the browser helper.
     // (Used by unit tests that simulate an expired token + refresh + retry.)
@@ -701,11 +715,13 @@ fn auto_login_via_browser(
     token_file: &Path,
     timeout_seconds: u64,
 ) -> anyhow::Result<String> {
-    // Test hook
+    // Test hook: return a deterministic token and persist it, just like the real path would.
     if let Ok(t) = std::env::var("COPILOT_TEST_AUTO_LOGIN_TOKEN")
         && !t.trim().is_empty()
     {
-        return Ok(t.trim().to_string());
+        let token = t.trim().to_string();
+        save_token(token_file, &token)?;
+        return Ok(token);
     }
 
     let Some(helper) = crate::config::token_helper_path() else {

@@ -3,6 +3,7 @@ use std::net::TcpListener;
 use std::thread;
 
 use copilot_money_cli::client::{ClientMode, CopilotClient};
+use serial_test::serial;
 
 fn serve_one(status: u16, body: &'static str, assert_bearer: Option<&'static str>) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
@@ -195,6 +196,7 @@ fn http_mode_errors_on_http_status() {
 }
 
 #[test]
+#[serial]
 fn http_mode_refreshes_token_on_unauthenticated_and_retries_once() {
     // NOTE: In Rust 2024 edition, mutating process env is `unsafe` due to potential UB with
     // concurrent access. This test runs single-threaded with a narrowly-scoped env var used
@@ -229,4 +231,195 @@ fn http_mode_refreshes_token_on_unauthenticated_and_retries_once() {
     assert_eq!(saved.trim(), "refreshed_token");
 
     unsafe { std::env::remove_var("COPILOT_TEST_REFRESH_TOKEN") };
+}
+
+/// Serve exactly three sequential HTTP requests on the same listener.
+fn serve_three(
+    responses: [(u16, &'static str, Option<&'static str>); 3],
+) -> String {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+
+    thread::spawn(move || {
+        for (status, body, assert_bearer) in responses {
+            let (mut stream, _) = listener.accept().unwrap();
+
+            let mut buf = Vec::new();
+            let mut header_end = None;
+            while header_end.is_none() {
+                let mut tmp = [0u8; 1024];
+                let n = stream.read(&mut tmp).unwrap();
+                if n == 0 { break; }
+                buf.extend_from_slice(&tmp[..n]);
+                if let Some(i) = buf.windows(4).position(|w| w == b"\r\n\r\n") {
+                    header_end = Some(i + 4);
+                }
+            }
+
+            let header_end = header_end.expect("did not receive full headers");
+            let headers = String::from_utf8_lossy(&buf[..header_end]).to_string();
+            let lower = headers.to_lowercase();
+            assert!(lower.starts_with("post /api/graphql"));
+            if let Some(t) = assert_bearer {
+                assert!(lower.contains(&format!("authorization: bearer {t}")));
+            }
+
+            let content_length = lower
+                .lines()
+                .find_map(|l| l.strip_prefix("content-length: "))
+                .and_then(|v| v.trim().parse::<usize>().ok())
+                .unwrap_or(0);
+
+            let mut body_buf = buf[header_end..].to_vec();
+            while body_buf.len() < content_length {
+                let mut tmp = vec![0u8; content_length - body_buf.len()];
+                let n = stream.read(&mut tmp).unwrap();
+                if n == 0 { break; }
+                body_buf.extend_from_slice(&tmp[..n]);
+            }
+
+            let resp = format!(
+                "HTTP/1.1 {status} OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            stream.write_all(resp.as_bytes()).unwrap();
+        }
+    });
+
+    format!("http://{}", addr)
+}
+
+// ---------------------------------------------------------------------------
+// Auto-login tests
+// ---------------------------------------------------------------------------
+
+static UNAUTH_BODY: &str =
+    r#"{"errors":[{"extensions":{"code":"UNAUTHENTICATED"},"message":"User is not authenticated"}]}"#;
+static SUCCESS_BODY: &str =
+    r#"{"data":{"user":{"id":"u1"}}}"#;
+
+#[test]
+#[serial]
+fn auto_login_disabled_bails_immediately_on_expired_token() {
+    // auto_login=false, no session dir → should fail on first UNAUTHENTICATED
+    let base_url = serve_one(200, UNAUTH_BODY, Some("bad"));
+    let tmp = tempfile::tempdir().unwrap();
+    let client = CopilotClient::new(ClientMode::Http {
+        base_url,
+        token: Some("bad".into()),
+        token_file: tmp.path().join("token"),
+        session_dir: None,
+        auto_login: false,
+    });
+    let err = client.try_user_query().unwrap_err().to_string();
+    assert!(err.contains("unauthenticated"), "got: {err}");
+}
+
+#[test]
+#[serial]
+fn auto_login_fires_when_session_refresh_unavailable() {
+    // No session dir → session refresh skipped → auto-login fires via test hook
+    // → retries with the new token → succeeds
+    unsafe { std::env::set_var("COPILOT_TEST_AUTO_LOGIN_TOKEN", "browser_token") };
+
+    let base_url = serve_two(
+        200,
+        UNAUTH_BODY,
+        Some("expired"),
+        200,
+        SUCCESS_BODY,
+        Some("browser_token"),
+    );
+
+    let tmp = tempfile::tempdir().unwrap();
+    let token_file = tmp.path().join("token");
+
+    let client = CopilotClient::new(ClientMode::Http {
+        base_url,
+        token: Some("expired".into()),
+        token_file: token_file.clone(),
+        session_dir: None, // no session → silent refresh impossible
+        auto_login: true,
+    });
+
+    client.try_user_query().unwrap();
+
+    // Verify the auto-login token was persisted
+    let saved = std::fs::read_to_string(&token_file).unwrap();
+    assert_eq!(saved.trim(), "browser_token");
+
+    unsafe { std::env::remove_var("COPILOT_TEST_AUTO_LOGIN_TOKEN") };
+}
+
+#[test]
+#[serial]
+fn auto_login_fires_after_session_refresh_fails() {
+    // Session dir exists but refresh helper fails → auto-login kicks in
+    unsafe { std::env::remove_var("COPILOT_TEST_REFRESH_TOKEN") };
+    unsafe { std::env::set_var("COPILOT_TEST_AUTO_LOGIN_TOKEN", "fallback_token") };
+
+    // 3 requests: original (unauth), session refresh retry (unauth), auto-login retry (success)
+    let base_url = serve_three([
+        (200, UNAUTH_BODY, Some("old_token")),
+        (200, UNAUTH_BODY, None),    // session refresh returns garbage → still unauth
+        (200, SUCCESS_BODY, Some("fallback_token")),
+    ]);
+
+    let tmp = tempfile::tempdir().unwrap();
+    let session_dir = tmp.path().join("session");
+    std::fs::create_dir_all(&session_dir).unwrap();
+    let token_file = tmp.path().join("token");
+
+    let client = CopilotClient::new(ClientMode::Http {
+        base_url,
+        token: Some("old_token".into()),
+        token_file: token_file.clone(),
+        session_dir: Some(session_dir),
+        auto_login: true,
+    });
+
+    client.try_user_query().unwrap();
+
+    let saved = std::fs::read_to_string(&token_file).unwrap();
+    assert_eq!(saved.trim(), "fallback_token");
+
+    unsafe { std::env::remove_var("COPILOT_TEST_AUTO_LOGIN_TOKEN") };
+}
+
+#[test]
+#[serial]
+fn auto_login_saves_token_for_future_silent_refresh() {
+    // After auto-login, the token file should exist so next time silent refresh works
+    unsafe { std::env::set_var("COPILOT_TEST_AUTO_LOGIN_TOKEN", "new_token") };
+
+    let base_url = serve_two(
+        200,
+        UNAUTH_BODY,
+        Some("stale"),
+        200,
+        SUCCESS_BODY,
+        Some("new_token"),
+    );
+
+    let tmp = tempfile::tempdir().unwrap();
+    let token_file = tmp.path().join("token");
+    assert!(!token_file.exists()); // no token file yet
+
+    let client = CopilotClient::new(ClientMode::Http {
+        base_url,
+        token: Some("stale".into()),
+        token_file: token_file.clone(),
+        session_dir: None,
+        auto_login: true,
+    });
+
+    client.try_user_query().unwrap();
+
+    // Token file should now exist with the new token
+    assert!(token_file.exists());
+    let saved = std::fs::read_to_string(&token_file).unwrap();
+    assert_eq!(saved.trim(), "new_token");
+
+    unsafe { std::env::remove_var("COPILOT_TEST_AUTO_LOGIN_TOKEN") };
 }
